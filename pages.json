@@ -1,0 +1,103 @@
+{
+	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/index/my",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": ""
+			}
+		}
+	],
+	// "subPackages": [{
+	// 		"root": "pages/pageIndex", // 首页分包
+	// 		"pages": [{
+	// 			"path": "index/index",
+	// 			"style": {
+	// 				"navigationStyle": "custom"
+	// 			}
+	// 		},{
+	// 			"path": "login/index",
+	// 			"style": {
+	// 				"navigationBarTitleText": "登录",
+	// 				"navigationStyle": "custom"
+	// 			}
+	// 		}]
+	// 	},
+	// 	{
+	// 		"root": "pages/pageClassify", // 分类分包
+	// 		"pages": [{
+	// 			"path": "index/index",
+	// 			"style": {
+	// 				"navigationStyle": "custom"
+	// 			}
+	// 		}]
+	// 	},
+	// 	{
+	// 		"root": "pages/pageVip", // 会员分包
+	// 		"pages": [{
+	// 			"path": "index/index",
+	// 			"style": {
+	// 				"navigationStyle": "custom"
+	// 			}
+	// 		}]
+	// 	},
+	// 	{
+	// 		"root": "pages/pageShopCar", // 购物车分包
+	// 		"pages": [{
+	// 			"path": "index/index",
+	// 			"style": {
+	// 				"navigationStyle": "custom"
+	// 			}
+	// 		}]
+	// 	},
+	// 	{
+	// 		"root": "pages/pageMy", // 我的分包
+	// 		"pages": [{
+	// 			"path": "index/index",
+	// 			"style": {
+	// 				"navigationStyle": "custom"
+	// 			}
+	// 		}]
+	// 	}
+	// ],
+
+	// "preloadRule": {
+	// 	"pages/pageIndex/index/index": {
+	// 		"network": "all",
+	// 		"packages": ["pages/pageClassify", "pages/pageVip", "pages/pageShopCar", "pages/pageMy"]
+	// 	}
+	// },
+
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"uniIdRouter": {},
+	//使用自定义导航后用不了switchTab方法跳转会导致每次进入tabbar页面都会刷新，所以采用定义原生tabbar之后隐藏的方法能正常调用switchTab方法
+	"tabBar": {
+		"list": [{
+			"pagePath": "pages/index/index"
+		}, {
+			"pagePath": "pages/index/my"
+		}],
+		"height": "0px"
+	},
+	"easycom": {
+		"autoscan": true,
+		// 注意一定要放在custom里，否则无效，https://ask.dcloud.net.cn/question/131175
+		"custom": {
+			"^u--(.*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue",
+			"^up-(.*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue",
+			"^u-([^-].*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue"
+		}
+	}
+}
