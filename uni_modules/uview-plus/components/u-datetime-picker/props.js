@@ -5,11 +5,29 @@ export const props = defineMixin({
         // 是否显示input
         hasInput: {
             type: Boolean,
-            default: () => false
+            default: false
         },
+        inputProps: {
+            type: Object,
+            default: () => {
+                return {}
+            }
+        },
+        inputBorder: {
+            type: String,
+            default: () => defProps.input.inputBorder
+        },
+		disabled: {
+            type: Boolean,
+            default: () => defProps.input.disabled
+        },
+		disabledColor:{
+			type: String,
+			default: () => defProps.input.disabledColor
+		},
         placeholder: {
             type: String,
-            default: () => '请选择'
+            default: () => defProps.input.placeholder
         },
         format: {
             type: String,
@@ -30,6 +48,11 @@ export const props = defineMixin({
             type: Boolean,
             default: () => defProps.datetimePicker.showToolbar
         },
+        // 工具栏右侧内容
+		toolbarRightSlot:{
+			type: Boolean,
+			default:  false
+		},
         // #ifdef VUE2
         // 绑定值
         value: {

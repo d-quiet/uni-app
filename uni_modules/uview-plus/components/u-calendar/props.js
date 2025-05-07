@@ -142,6 +142,19 @@ export const props = defineMixin({
 		monthNum: {
 			type: [Number, String],
 			default: 3
-		}	
+		},
+        // 星期文案
+        weekText: {
+			type: Array,
+			default: defProps.calendar.weekText
+		},
+        forbidDays: {
+			type: Array,
+			default: defProps.calendar.forbidDays
+		},
+        forbidDaysToast:{
+			type: String,
+			default: defProps.calendar.forbidDaysToast
+		},
     }
 })

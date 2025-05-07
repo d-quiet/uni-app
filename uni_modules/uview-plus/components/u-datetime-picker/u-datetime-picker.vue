@@ -1,33 +1,49 @@
 <template>
-    <view v-if="hasInput" class="u-datetime-picker">
-        <u-input
-            :placeholder="placeholder"
-            border="surround"
-            v-model="inputValue"
-            @click="showByClickInput = !showByClickInput"
-        ></u-input>
+    <view class="u-datetime-picker">
+        <view v-if="hasInput" class="u-datetime-picker__has-input"
+            @click="onShowByClickInput" 
+        >
+            <slot name="trigger" :value="inputValue">
+				<up-input
+					:readonly="!!showByClickInput"
+					v-model="inputValue"
+					v-bind="inputPropsInner"
+				></up-input>
+				<div class="input-cover">
+				</div>
+			</slot>
+        </view>
+        <u-picker
+            ref="picker"
+            :show="show || (hasInput && showByClickInput)"
+            :popupMode="popupMode"
+            :closeOnClickOverlay="closeOnClickOverlay"
+            :columns="columns"
+            :title="title"
+            :itemHeight="itemHeight"
+            :showToolbar="showToolbar"
+            :visibleItemCount="visibleItemCount"
+            :defaultIndex="innerDefaultIndex"
+            :cancelText="cancelText"
+            :confirmText="confirmText"
+            :cancelColor="cancelColor"
+            :confirmColor="confirmColor"
+            :toolbarRightSlot="toolbarRightSlot"
+            @close="close"
+            @cancel="cancel"
+            @confirm="confirm"
+            @change="change"
+        >
+            <template #toolbar-right>
+                <slot name="toolbar-right">
+                </slot>
+            </template>
+            <template #toolbar-bottom>
+                <slot name="toolbar-bottom">
+                </slot>
+            </template>
+        </u-picker>
     </view>
-	<u-picker
-		ref="picker"
-		:show="show || (hasInput && showByClickInput)"
-		:popupMode="popupMode"
-		:closeOnClickOverlay="closeOnClickOverlay"
-		:columns="columns"
-		:title="title"
-		:itemHeight="itemHeight"
-		:showToolbar="showToolbar"
-		:visibleItemCount="visibleItemCount"
-		:defaultIndex="innerDefaultIndex"
-		:cancelText="cancelText"
-		:confirmText="confirmText"
-		:cancelColor="cancelColor"
-		:confirmColor="confirmColor"
-		@close="close"
-		@cancel="cancel"
-		@confirm="confirm"
-		@change="change"
-	>
-	</u-picker>
 </template>
 
 <script>
@@ -78,7 +94,7 @@
 	 * @example  <u-datetime-picker :show="show" :value="value1"  mode="datetime" ></u-datetime-picker>
 	 */
 	export default {
-		name: 'datetime-picker',
+		name: 'up-datetime-picker',
 		mixins: [mpMixin, mixin, props],
 		data() {
 			return {
@@ -116,6 +132,16 @@
 			// 如果以下这些变量发生了变化，意味着需要重新初始化各列的值
 			propsChange() {
 				return [this.mode, this.maxDate, this.minDate, this.minHour, this.maxHour, this.minMinute, this.maxMinute, this.filter, ]
+			},
+			// input的props
+			inputPropsInner() {
+				return {
+					border: this.inputBorder,
+            		placeholder: this.placeholder,
+					disabled: this.disabled,
+					disabledColor: this.disabledColor,
+					...this.inputProps
+				}
 			}
 		},
 		mounted() {
@@ -322,11 +348,12 @@
 			        if (this.filter) {
 			            values = this.filter(type, values)
 						if (!values || (values && values.length == 0)) {
-							uni.showToast({
-								title: '日期filter结果不能为空',
-								icon: 'error',
-								mask: true
-							})
+							// uni.showToast({
+							// 	title: '日期filter结果不能为空',
+							// 	icon: 'error',
+							// 	mask: true
+							// })
+							console.log('日期filter结果不能为空')
 						}
 			        }
 			        return { type, values }
@@ -340,7 +367,8 @@
 			// 得出合法的时间
 			correctValue(value) {
 				const isDateMode = this.mode !== 'time'
-				if (isDateMode && !test.date(value)) {
+				// if (isDateMode && !test.date(value)) {
+				if (isDateMode && !dayjs.unix(value).isValid()) {
 					// 如果是日期类型，但是又没有设置合法的当前时间的话，使用最小时间为当前时间
 					value = this.minDate
 				} else if (!isDateMode && !value) {
@@ -442,6 +470,12 @@
 			        [`${type}Hour`]: hour,
 			        [`${type}Minute`]: minute
 			    }
+			},
+			onShowByClickInput(){
+				if(!this.disabled){
+					this.showByClickInput = !this.showByClickInput
+				}
+				
 			}
 		}
 	}
@@ -450,6 +484,29 @@
 <style lang="scss" scoped>
 	@import '../../libs/css/components.scss';
 	.u-datetime-picker {
-		width: 100%;
+		flex: 1;
+        &__has-input {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+            /* #ifndef APP-NVUE */
+            width: 100%;
+            /* #endif */
+			.input-cover {
+				opacity: 0;
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left:0;
+				right:0;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				border-radius: 4px;
+				border: 1px solid #eee;
+				padding: 0 10px;
+			}
+        }
 	}
 </style>

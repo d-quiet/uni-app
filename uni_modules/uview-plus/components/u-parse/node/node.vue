@@ -122,7 +122,7 @@ export default {
     return {
       ctrl: {},
       // #ifdef MP-WEIXIN
-      isiOS: uni.getSystemInfoSync().system.includes('iOS')
+      isiOS: uni.getDeviceInfo().system.includes('iOS')
       // #endif
     }
   },
@@ -168,7 +168,7 @@ export default {
     }
     // #endif
   },
-  beforeDestroy () {
+  beforeUnmount () {
     // #ifdef H5 || APP-PLUS
     if (this.observer) {
       this.observer.disconnect()
@@ -407,7 +407,9 @@ export default {
 ._a {
   padding: 1.5px 0 1.5px 0;
   color: #366092;
+  /* #ifndef APP-NVUE */
   word-break: break-all;
+  /* #endif */
 }
 
 /* a 标签点击态效果 */
@@ -425,7 +427,9 @@ export default {
 /* 内部样式 */
 
 ._block {
+  /* #ifndef APP-NVUE */
   display: block;
+  /* #endif */
 }
 
 ._b,
@@ -472,7 +476,9 @@ export default {
 ._h4,
 ._h5,
 ._h6 {
+  /* #ifndef APP-NVUE */
   display: block;
+  /* #endif */
   font-weight: bold;
 }
 
@@ -494,7 +500,9 @@ export default {
 
 ._ol,
 ._ul {
+  /* #ifndef APP-NVUE */
   display: block;
+  /* #endif */
   padding-left: 40px;
   margin: 1em 0;
 }

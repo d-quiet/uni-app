@@ -1,57 +1,80 @@
 <template>
-	<u-popup
-		:show="show"
-		:mode="popupMode"
-		@close="closeHandler"
-	>
-		<view class="u-picker">
-			<u-toolbar
-				v-if="showToolbar"
-				:cancelColor="cancelColor"
-				:confirmColor="confirmColor"
-				:cancelText="cancelText"
-				:confirmText="confirmText"
-				:title="title"
-				@cancel="cancel"
-				@confirm="confirm"
-			></u-toolbar>
-			<picker-view
-				class="u-picker__view"
-				:indicatorStyle="`height: ${addUnit(itemHeight)}`"
-				:value="innerIndex"
-				:immediateChange="immediateChange"
-				:style="{
-					height: `${addUnit(visibleItemCount * itemHeight)}`
-				}"
-				@change="changeHandler"
-			>
-				<picker-view-column
-					v-for="(item, index) in innerColumns"
-					:key="index"
-					class="u-picker__view__column"
-				>
-					<view
-						v-if="testArray(item)"
-						class="u-picker__view__column__item u-line-1"
-						v-for="(item1, index1) in item"
-						:key="index1"
-						:style="{
-							height: addUnit(itemHeight),
-							lineHeight: addUnit(itemHeight),
-							fontWeight: index1 === innerIndex[index] ? 'bold' : 'normal',
-							display: 'block'
-						}"
-					>{{ getItemText(item1) }}</view>
-				</picker-view-column>
-			</picker-view>
-			<view
-				v-if="loading"
-				class="u-picker--loading"
-			>
-				<u-loading-icon mode="circle"></u-loading-icon>
-			</view>
+    <view class="u-picker-warrper">
+		<view v-if="hasInput" class="u-picker-input cursor-pointer" @click="onShowByClickInput">
+			<slot :value="inputLabel">
+			</slot>
+			<slot name="trigger" :value="inputLabel">
+			</slot>
+			<up-input
+				v-if="!$slots['default'] && !$slots['$default'] && !$slots['trigger']"
+				:readonly="true"
+				v-model="inputLabel"
+				v-bind="inputPropsInner">
+			</up-input>
+			<div class="input-cover"></div>
 		</view>
-	</u-popup>
+		<u-popup
+			:show="show || (hasInput && showByClickInput)"
+			:mode="popupMode"
+			:zIndex="zIndex"
+			@close="closeHandler"
+		>
+			<view class="u-picker">
+				<u-toolbar
+					v-if="showToolbar"
+					:cancelColor="cancelColor"
+					:confirmColor="confirmColor"
+					:cancelText="cancelText"
+					:confirmText="confirmText"
+					:title="title"
+					:rightSlot="toolbarRightSlot ? true : false"
+					@cancel="cancel"
+					@confirm="confirm"
+				>
+					<template #right>
+						<slot name="toolbar-right"></slot>
+					</template>
+				</u-toolbar>
+				<slot name="toolbar-bottom"></slot>
+				<picker-view
+					class="u-picker__view"
+					:indicatorStyle="`height: ${addUnit(itemHeight)}`"
+					:value="innerIndex"
+					:immediateChange="immediateChange"
+					:style="{
+						height: `${addUnit(visibleItemCount * itemHeight)}`
+					}"
+					@change="changeHandler"
+				>
+					<picker-view-column
+						v-for="(item, index) in innerColumns"
+						:key="index"
+						class="u-picker__view__column"
+					>
+						<view
+							v-if="testArray(item)"
+							class="u-picker__view__column__item u-line-1"
+							:class="[index1 === innerIndex[index] && 'u-picker__view__column__item--selected']"
+							v-for="(item1, index1) in item"
+							:key="index1"
+							:style="{
+								height: addUnit(itemHeight),
+								lineHeight: addUnit(itemHeight),
+								fontWeight: index1 === innerIndex[index] ? 'bold' : 'normal',
+								display: 'block'
+							}"
+						>{{ getItemText(item1) }}</view>
+					</picker-view-column>
+				</picker-view>
+				<view
+					v-if="loading"
+					class="u-picker--loading"
+				>
+					<u-loading-icon mode="circle"></u-loading-icon>
+				</view>
+			</view>
+		</u-popup>
+    </view>
 </template>
 
 <script>
@@ -96,14 +119,22 @@ export default {
 			innerColumns: [],
 			// 上一次的变化列索引
 			columnIndex: 0,
+            showByClickInput: false,
+			currentActiveValue: [] //当前用户选中，但是还没确认的值，用户没做change操作时候，点击确认可以默认选中第一个
 		}
 	},
 	watch: {
 		// 监听默认索引的变化，重新设置对应的值
 		defaultIndex: {
 			immediate: true,
-			handler(n) {
-				this.setIndexs(n, true)
+			deep:true,
+			handler(n,o) {
+				// 修复uniapp调用子组件直接:defaultIndex="[0]"这样写
+				// v-model的值变化时候导致defaultIndexwatch也会执行的问题
+				//单纯vue不会出现
+				if (!o || n.join("/") != o.join("/")) {
+					this.setIndexs(n, true)
+				}
 			}
 		},
 		// 监听columns参数的变化
@@ -115,10 +146,59 @@ export default {
 			}
 		},
 	},
-	emits: ['close', 'cancel', 'confirm', 'change'],
+	emits: ['close', 'cancel', 'confirm', 'change', 'update:modelValue', 'update:show'],
+    computed: {
+		// input的props
+		inputPropsInner() {
+			return {
+				border: this.inputBorder,
+				placeholder: this.placeholder,
+				disabled: this.disabled,
+				disabledColor: this.disabledColor,
+				...this.inputProps
+			}
+		},
+		//已选&&已确认的值显示在input上面的文案
+		inputLabel() {
+			let firstItem = this.innerColumns[0] && this.innerColumns[0][0];
+			// //区分是不是对象数组
+			if (firstItem && Object.prototype.toString.call(firstItem) === '[object Object]') {
+				let res = this.innerColumns[0].filter(item => this.modelValue.includes(item['id']))
+				res = res.map(item => item[this.keyName]);
+				return res.join("/");
+
+			} else {
+				//用户确定的值，才显示到输入框
+				return this.modelValue.join("/");
+			}
+		},
+		//已选，待确认的值
+		inputValue() {
+			let items = this.innerColumns.map((item, index) => item[this.innerIndex[index]])
+			let res = []
+			//区分是不是对象数组
+			if (items[0] && Object.prototype.toString.call(items[0]) === '[object Object]') {
+				//对象数组返回id集合
+				items.forEach(element => {
+					res.push(element && element['id'])
+				});
+			} else {
+				//非对象数组返回元素集合
+				items.forEach((element, index) => {
+					res.push(element)
+				});
+			}
+			return res
+		}
+    },
 	methods: {
 		addUnit,
 		testArray: test.array,
+		onShowByClickInput(){
+			if(!this.disabled){
+				this.showByClickInput=!this.showByClickInput;
+			}
+		},
 		// 获取item需要显示的文字，判别为对象还是文本
 		getItemText(item) {
 			if (test.object(item)) {
@@ -130,15 +210,41 @@ export default {
 		// 关闭选择器
 		closeHandler() {
 			if (this.closeOnClickOverlay) {
+                if (this.hasInput) {
+                    this.showByClickInput = false
+                }
+				this.$emit('update:show', false)
 				this.$emit('close')
 			}
 		},
 		// 点击工具栏的取消按钮
 		cancel() {
+            if (this.hasInput) {
+                this.showByClickInput = false
+            }
+			this.$emit('update:show', false)
 			this.$emit('cancel')
 		},
 		// 点击工具栏的确定按钮
 		confirm() {
+			//如果用户有没有触发过change
+			if (!this.currentActiveValue.length) {
+				let arr = [0]
+				//如果有默认值&&默认值的数组长度是正确的，就用默认值
+				if (Array.isArray(this.defaultIndex) && this.defaultIndex.length == this.innerColumns.length) {
+					arr = [...this.defaultIndex];
+				} else {
+					//否则默认都选中第一个
+					arr = Array(this.innerColumns.length).fill(0);
+				}
+				this.setLastIndex(arr)
+				this.setIndexs(arr)
+			}
+            this.$emit('update:modelValue', this.inputValue)
+            if (this.hasInput) {
+                this.showByClickInput = false
+            }
+			this.$emit('update:show', false)
 			this.$emit('confirm', {
 				indexs: this.innerIndex,
 				value: this.innerColumns.map((item, index) => item[this.innerIndex[index]]),
@@ -152,6 +258,8 @@ export default {
 			} = e.detail
 			let index = 0,
 				columnIndex = 0
+			//记录用户选中但是还没确认的值
+			this.currentActiveValue = value;	
 			// 通过对比前后两次的列索引，得出当前变化的是哪一列
 			for (let i = 0; i < value.length; i++) {
 				let item = value[i]
@@ -168,7 +276,11 @@ export default {
 			// 将当前的各项变化索引，设置为"上一次"的索引变化值
 			this.setLastIndex(value)
 			this.setIndexs(value)
-
+			//如果是非自带输入框才会在change时候触发v-model绑值的变化
+			//否则会非常的奇怪，用户未确认，值就变了
+			if (!this.hasInput) {
+				this.$emit('update:modelValue', this.inputValue)
+			}
 			this.$emit('change', {
 				// #ifndef MP-WEIXIN || MP-LARK
 				// 微信小程序不能传递this，会因为循环引用而报错
@@ -251,7 +363,18 @@ export default {
 
 	.u-picker {
 		position: relative;
-
+		&-input {
+			position: relative;
+			.input-cover {
+				opacity: 0;
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				z-index:1;
+			}
+		}
 		&__view {
 
 			&__column {

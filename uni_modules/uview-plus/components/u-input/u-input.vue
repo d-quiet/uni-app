@@ -18,6 +18,7 @@
 					为了防止type=number时，又存在password属性，type无效，此时需要设置password为undefined
 				 -->
             	<input
+                    ref="input-native"
             	    class="u-input__content__field-wrapper__field"
             	    :style="[inputStyle]"
             	    :type="type"
@@ -44,6 +45,7 @@
             	    @focus="onFocus"
             	    @confirm="onConfirm"
             	    @keyboardheightchange="onkeyboardheightchange"
+                    @nicknamereview="onnicknamereview"
             	/>
             </view>
             <view
@@ -91,7 +93,7 @@ import { addStyle, addUnit, deepMerge, formValidate, $parent, sleep, os } from '
  * @property {String}			disabledColor			禁用状态时的背景色（ 默认 '#f5f7fa' ）
  * @property {Boolean}			clearable				是否显示清除控件 （ 默认 false ）
  * @property {Boolean}			password				是否密码类型 （ 默认 false ）
- * @property {String | Number}	maxlength				最大输入长度，设置为 -1 的时候不限制最大长度 （ 默认 -1 ）
+ * @property {Number}       	maxlength				最大输入长度，设置为 -1 的时候不限制最大长度 （ 默认 -1 ）
  * @property {String}			placeholder				输入框为空时的占位符
  * @property {String}			placeholderClass		指定placeholder的样式类，注意页面或组件的style中写了scoped时，需要在类名前写/deep/ （ 默认 'input-placeholder' ）
  * @property {String | Object}	placeholderStyle		指定placeholder的样式，字符串/对象形式，如"color: red;"
@@ -102,7 +104,7 @@ import { addStyle, addUnit, deepMerge, formValidate, $parent, sleep, os } from '
  * @property {Boolean}			focus					自动获取焦点，在 H5 平台能否聚焦以及软键盘是否跟随弹出，取决于当前浏览器本身的实现。nvue 页面不支持，需使用组件的 focus()、blur() 方法控制焦点 （ 默认 false ）
  * @property {Boolean}			autoBlur				键盘收起时，是否自动失去焦点，目前仅App3.0.0+有效 （ 默认 false ）
  * @property {Boolean}			disableDefaultPadding	是否去掉 iOS 下的默认内边距，仅微信小程序，且type=textarea时有效 （ 默认 false ）
- * @property {String ｜ Number}	cursor					指定focus时光标的位置（ 默认 -1 ）
+ * @property {String ｜ Number}	cursor					指定focus时光标的位置（ 默认 140 ）
  * @property {String ｜ Number}	cursorSpacing			输入框聚焦时底部与键盘的距离 （ 默认 30 ）
  * @property {String ｜ Number}	selectionStart			光标起始位置，自动聚集时有效，需与selection-end搭配使用 （ 默认 -1 ）
  * @property {String ｜ Number}	selectionEnd			光标结束位置，自动聚集时有效，需与selection-start搭配使用 （ 默认 -1 ）
@@ -151,8 +153,9 @@ export default {
         modelValue: {
             immediate: true,
             handler(newVal, oldVal) {
-                console.log(newVal, oldVal)
+                // console.log(newVal, oldVal)
                 if (this.changeFromInner || this.innerValue === newVal) {
+                    this.changeFromInner = false; // 重要否则会出现双向绑定失效问题https://github.com/ijry/uview-plus/issues/419
                     return;
                 }
                 this.innerValue = newVal;
@@ -161,7 +164,7 @@ export default {
                     this.firstChange === false &&
 					this.changeFromInner === false
                 ) {
-                    this.valueChange(this.innerValue);
+                    this.valueChange(this.innerValue, true);
                 } else {
 					// 尝试调用up-form的验证方法
                     if(!this.firstChange) formValidate(this, "change");
@@ -222,7 +225,7 @@ export default {
         },
     },
     // #ifdef VUE3
-    emits: ['update:modelValue', 'focus', 'blur', 'change', 'confirm', 'clear', 'keyboardheightchange'],
+    emits: ['update:modelValue', 'focus', 'blur', 'change', 'confirm', 'clear', 'keyboardheightchange', 'nicknamereview'],
     // #endif
     methods: {
 		// 在微信小程序中，不支持将函数当做props参数，故只能通过ref形式调用
@@ -233,6 +236,7 @@ export default {
         onInput(e) {
             let { value = "" } = e.detail || {};
             // 为了避免props的单向数据流特性，需要先将innerValue值设置为当前值，再在$nextTick中重新赋予设置后的值才有效
+            // console.log('onInput', value, this.innerValue)
             this.innerValue = value;
             this.$nextTick(() => {
                 let formatValue = this.innerFormatter(value);
@@ -256,6 +260,12 @@ export default {
             this.focused = true;
             this.$emit("focus");
         },
+        doFocus() {
+            this.$refs['input-native'].focus();
+        },
+        doBlur() {
+            this.$refs['input-native'].blur();
+        },
         // 点击完成按钮时触发
         onConfirm(event) {
             this.$emit("confirm", this.innerValue);
@@ -264,6 +274,9 @@ export default {
         // 兼容性：微信小程序2.7.0+、App 3.1.0+
 		onkeyboardheightchange(event) {
             this.$emit("keyboardheightchange", event);
+        },
+        onnicknamereview(event) {
+            this.$emit("nicknamereview", event);
         },
         // 内容发生变化，进行处理
         valueChange(value, isOut = false) {
@@ -304,6 +317,9 @@ export default {
          * 无法触发u-form-item的点击事件，这里通过手动调用u-form-item的方法进行触发
          */
         clickHandler() {
+            if (this.disabled || this.readonly) {
+                uni.hideKeyboard();
+            }
             // #ifdef APP-NVUE
             if (os() === "android") {
                 const formItem = $parent.call(this, "u-form-item");

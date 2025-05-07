@@ -12,11 +12,11 @@
 					:class="[item1.selected && 'u-calendar-month__days__day__select--selected']">
 					<view class="u-calendar-month__days__day__select" :style="[daySelectStyle(index, index1, item1)]">
 						<text class="u-calendar-month__days__day__select__info"
-							:class="[item1.disabled && 'u-calendar-month__days__day__select__info--disabled']"
+							:class="[(item1.disabled || isForbid(item1) ) ? 'u-calendar-month__days__day__select__info--disabled' : '']"
 							:style="[textStyle(item1)]">{{ item1.day }}</text>
 						<text v-if="getBottomInfo(index, index1, item1)"
 							class="u-calendar-month__days__day__select__buttom-info"
-							:class="[item1.disabled && 'u-calendar-month__days__day__select__buttom-info--disabled']"
+							:class="[(item1.disabled || isForbid(item1) ) ? 'u-calendar-month__days__day__select__buttom-info--disabled' : '']"
 							:style="[textStyle(item1)]">{{ getBottomInfo(index, index1, item1) }}</text>
 						<text v-if="item1.dot" class="u-calendar-month__days__day__select__dot"></text>
 					</view>
@@ -126,6 +126,14 @@
 			allowSameDay: {
 				type: Boolean,
 				default: false
+			},
+			forbidDays: {
+				type: Array,
+				default: () => []
+			},
+			forbidDaysToast: {
+				type: String,
+				default: ''
 			}
 		},
 		data() {
@@ -158,16 +166,16 @@
 					const dayWidth = Number(parseFloat(this.width / 7).toFixed(3).slice(0, -1))
 					// 得出每个日期的宽度
 					// #ifdef APP-NVUE
-					style.width = addUnit(dayWidth)
+					style.width = addUnit(dayWidth, 'px')
 					// #endif
 					style.height = addUnit(this.rowHeight)
 					if (index2 === 0) {
 						// 获取当前为星期几，如果为0，则为星期天，减一为每月第一天时，需要向左偏移的item个数
 						week = (week === 0 ? 7 : week) - 1
-						style.marginLeft = addUnit(week * dayWidth)
+						style.marginLeft = addUnit(week * dayWidth, 'px')
 					}
 					if (this.mode === 'range') {
-						// 之所以需要这么写，是因为DCloud公司的iOS客户端的开发者能力有限导致的bug
+						// 之所以需要这么写，是因为DCloud公司的iOS客户端导致的bug
 						style.paddingLeft = 0
 						style.paddingRight = 0
 						style.paddingBottom = 0
@@ -284,6 +292,7 @@
 		mounted() {
 			this.init()
 		},
+		emits: ['monthSelected', 'updateMonthTop'],
 		methods: {
 			init() {
 				// 初始化默认选中
@@ -296,6 +305,13 @@
 						this.getMonthRect()
 					})
 				})
+			},
+			isForbid(item) {
+				let date = dayjs(item.date).format("YYYY-MM-DD")
+				if (this.mode !== 'range' && this.forbidDays.includes(date)) {
+					return true
+				}
+				return false
 			},
 			// 判断两个日期是否相等
 			dateSame(date1, date2) {
@@ -362,6 +378,12 @@
 				this.item = item
 				const date = dayjs(item.date).format("YYYY-MM-DD")
 				if (item.disabled) return
+				if (this.isForbid(item)) {
+					uni.showToast({
+						title: this.forbidDaysToast
+					})
+					return
+				}
 				// 对上一次选择的日期数组进行深度克隆
 				let selected = deepClone(this.selected)
 				if (this.mode === 'single') {
@@ -468,6 +490,8 @@
 	.u-calendar-month {
 
 		&__title {
+			display: flex;
+			flex-direction: column;
 			font-size: 14px;
 			line-height: 42px;
 			height: 42px;

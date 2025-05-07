@@ -20,12 +20,12 @@
 			</view>
 		</view>
 		<view class="u-dropdown__content" :style="[contentStyle, {
-			transition: `opacity ${duration / 1000}s linear`,
-			top: addUnit(height),
-			height: contentHeight + 'px'
+			transition: `opacity ${duration / 1000}s, z-index ${duration / 1000}s linear`,
+			top: addUnit(height)
 		}]"
 		 @tap="maskClick" @touchmove.stop.prevent>
-			<view @tap.stop.prevent class="u-dropdown__content__popup" :style="[popupStyle]">
+			<view @tap.stop.prevent class="u-dropdown__content__popup" :style="[popupStyle, {
+			}]">
 				<slot></slot>
 			</view>
 			<view class="u-dropdown__content__mask"></view>
@@ -37,7 +37,7 @@
     import { props } from './props';
     import { mpMixin } from '../../libs/mixin/mpMixin';
 	import { mixin } from '../../libs/mixin/mixin';
-	import { addUnit, sys} from '../../libs/function/index';
+	import { addUnit, getWindowInfo} from '../../libs/function/index';
 	/**
 	 * dropdown 下拉菜单
 	 * @description 该组件一般用于向下展开菜单，同时可切换多个选项卡的场景
@@ -129,6 +129,7 @@
 				// 展开时，设置下拉内容的样式
 				this.contentStyle = {
 					zIndex: 11,
+					height: this.contentHeight + 'px'
 				}
 				// 标记展开状态以及当前展开项的索引
 				this.active = true;
@@ -147,10 +148,11 @@
 				this.active = false;
 				this.current = 99999;
 				// 下拉内容的样式进行调整，不透明度设置为0
-				this.contentStyle = {
-					zIndex: -1,
-					opacity: 0
-				}
+				this.contentStyle.zIndex = -1;
+				this.contentStyle.opacity = 0;
+				setTimeout(() => {
+					this.contentStyle.height = 0;
+				}, this.duration)
 			},
 			// 点击遮罩
 			maskClick() {
@@ -166,8 +168,8 @@
 			getContentHeight() {
 				// 这里的原理为，因为dropdown组件是相对定位的，它的下拉出来的内容，必须给定一个高度
 				// 才能让遮罩占满菜单一下，直到屏幕底部的高度
-				// sys()为uview-plus封装的获取设备信息的方法
-				let windowHeight = sys().windowHeight;
+				// getWindowInfo()为uview-plus封装的获取设备信息的方法
+				let windowHeight = getWindowInfo().windowHeight;
 				this.$uGetRect('.u-dropdown__menu').then(res => {
 					// 这里获取的是dropdown的尺寸，在H5上，uniapp获取尺寸是有bug的(以前提出修复过，后来又出现了此bug，目前hx2.8.11版本)
 					// H5端bug表现为元素尺寸的top值为导航栏底部到到元素的上边沿的距离，但是元素的bottom值确是导航栏顶部到元素底部的距离
@@ -244,7 +246,7 @@
 			&__popup {
 				position: relative;
 				z-index: 10;
-				transition: all 0.3s;
+				transition: transform 0.3s;
 				transform: translate3D(0, -100%, 0);
 				overflow: hidden;
 			}

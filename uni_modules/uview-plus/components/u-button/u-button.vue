@@ -271,14 +271,16 @@ export default {
 		'error', 'opensetting', 'launchapp', 'agreeprivacyauthorization'],
     methods: {
         addStyle,
-        clickHandler() {
+        clickHandler(e: any) {
             // 非禁止并且非加载中，才能点击
             if (!this.disabled && !this.loading) {
 				// 进行节流控制，每this.throttle毫秒内，只在开始处执行
 				throttle(() => {
-					this.$emit("click");
+					this.$emit("click", e);
 				}, this.throttleTime);
             }
+            // 是否阻止事件传播
+            this.stop && this.preventEvent(e)
         },
         // 下面为对接uniapp官方按钮开放能力事件回调的对接
         getphonenumber(res: any) {

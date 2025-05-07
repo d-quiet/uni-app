@@ -20,11 +20,26 @@
 							v-for="(item, index) in list"
 							:key="index"
 							@tap="clickHandler(item, index)"
+							@longpress="longPressHandler(item,index)"
 							:ref="`u-tabs__wrapper__nav__item-${index}`"
 							:style="[addStyle(itemStyle), {flex: scrollable ? '' : 1}]"
-							:class="[`u-tabs__wrapper__nav__item-${index}`, item.disabled && 'u-tabs__wrapper__nav__item--disabled']"
+							:class="[`u-tabs__wrapper__nav__item-${index}`,
+								item.disabled && 'u-tabs__wrapper__nav__item--disabled',
+								innerCurrent == index ? 'u-tabs__wrapper__nav__item-active' : '']"
 						>
-							<text
+							<slot v-if="$slots.icon" name="icon" :item="item" :keyName="keyName" :index="index" />
+							<template v-else>
+								<view class="u-tabs__wrapper__nav__item__prefix-icon" v-if="item.icon">
+									<up-icon
+										:name="item.icon"
+										:customStyle="addStyle(iconStyle)"
+									></up-icon>
+								</view>
+							</template>
+							<slot v-if="$slots.content" name="content" :item="item" :keyName="keyName" :index="index" />
+							<slot v-else-if="!$slots.content && ($slots.default || $slots.$default)"
+								:item="item" :keyName="keyName" :index="index" />
+							<text v-else
 								:class="[item.disabled && 'u-tabs__wrapper__nav__item__text--disabled']"
 								class="u-tabs__wrapper__nav__item__text"
 								:style="[textStyle(index)]"
@@ -89,7 +104,7 @@
 	import { mpMixin } from '../../libs/mixin/mpMixin';
 	import { mixin } from '../../libs/mixin/mixin';
 	import defProps from '../../libs/config/props.js'
-	import { addUnit, addStyle, deepMerge, getPx, sleep, sys } from '../../libs/function/index';
+	import { addUnit, addStyle, deepMerge, getPx, sleep, getWindowInfo } from '../../libs/function/index';
 	/**
 	 * Tabs 标签
 	 * @description tabs标签组件，在标签多的时候，可以配置为左右滑动，标签少的时候，可以禁止滑动。 该组件的一个特点是配置为滚动模式时，激活的tab会自动移动到组件的中间位置。
@@ -99,7 +114,8 @@
 	 * @property {String}	keyName	 从`list`元素对象中读取的键名（默认 'name' ）
 	 * @event {Function(index)} change 标签改变时触发 index: 点击了第几个tab，索引从0开始
 	 * @event {Function(index)} click 点击标签时触发 index: 点击了第几个tab，索引从0开始
-	 * @example <u-tabs :list="list" :is-scroll="false" :current="current" @change="change"></u-tabs>
+	 * @event {Function(index)} longPress 长按标签时触发 index: 点击了第几个tab，索引从0开始
+	 * @example <u-tabs :list="list" :is-scroll="false" :current="current" @change="change" @longPress="longPress"></u-tabs>
 	 */
 	export default {
 		name: 'u-tabs',
@@ -123,7 +139,11 @@
 				handler (newValue, oldValue) {
 					// 内外部值不相等时，才尝试移动滑块
 					if (newValue !== this.innerCurrent) {
-						this.innerCurrent = newValue
+						if (typeof newValue == 'string') {
+							this.innerCurrent = parseInt(newValue)
+						} else {
+							this.innerCurrent = newValue
+						}
 						this.$nextTick(() => {
 							this.resize()
 						})
@@ -142,7 +162,9 @@
 				return index => {
 					const style = {}
 					// 取当期是否激活的样式
-					const customeStyle = index === this.innerCurrent ? addStyle(this.activeStyle) : addStyle(this.inactiveStyle)
+					const customeStyle = (index == this.innerCurrent)
+						? addStyle(this.activeStyle) 
+						: addStyle(this.inactiveStyle)
 					// 如果当前菜单被禁用，则加上对应颜色，需要在此做处理，是因为nvue下，无法在style样式中通过!import覆盖标签的内联样式
 					if (this.list[index].disabled) {
 						style.color = '#c8c9cc'
@@ -157,7 +179,7 @@
 		async mounted() {
 			this.init()
 		},
-		emits: ['click', 'change'],
+		emits: ['click', 'longPress', 'change', 'update:current'],
 		methods: {
 			addStyle,
 			addUnit,
@@ -207,12 +229,22 @@
 				}, index)
 				// 如果disabled状态，返回
 				if (item.disabled) return
+				// 如果点击当前不触发change
+				if (this.innerCurrent == index) return
 				this.innerCurrent = index
 				this.resize()
+				this.$emit('update:current', index)
 				this.$emit('change', {
 					...item,
 					index
 				}, index)
+			},
+			// 长按事件
+			longPressHandler(item, index) {
+				this.$emit('longPress', {
+					...item,
+					index
+				})
 			},
 			init() {
 				sleep().then(() => {
@@ -221,6 +253,9 @@
 			},
 			setScrollLeft() {
 				// 当前活动tab的布局信息，有tab菜单的width和left(为元素左边界到父元素左边界的距离)等信息
+				if (this.innerCurrent < 0) {
+                    this.innerCurrent = 0;
+                }
 				const tabRect = this.list[this.innerCurrent]
 				// 累加得到当前item到左边的距离
 				const offsetLeft = this.list
@@ -229,7 +264,7 @@
 						return total + curr.rect.width
 					}, 0)
 				// 此处为屏幕宽度
-				const windowWidth = sys().windowWidth
+				const windowWidth = getWindowInfo().windowWidth
 				// 将活动的tabs-item移动到屏幕正中间，实际上是对scroll-view的移动
 				let scrollLeft = offsetLeft - (this.tabsRect.width - tabRect.rect.width) / 2 - (windowWidth - this.tabsRect
 					.right) / 2 + this.tabsRect.left / 2
@@ -244,6 +279,12 @@
 					return
 				}
 				Promise.all([this.getTabsRect(), this.getAllItemRect()]).then(([tabsRect, itemRect = []]) => {
+					// 兼容在swiper组件中使用
+					if (tabsRect.left > tabsRect.width) {
+						tabsRect.right = tabsRect.right - Math.floor(tabsRect.left / tabsRect.width) * tabsRect.width
+						tabsRect.left = tabsRect.left % tabsRect.width
+					}
+					// console.log(tabsRect)
 					this.tabsRect = tabsRect
 					this.scrollViewWidth = 0
 					itemRect.map((item, index) => {
@@ -327,10 +368,12 @@
 					@include flex;
 					align-items: center;
 					justify-content: center;
+					/* #ifdef H5 */
 					cursor: pointer;
+					/* #endif */
 
 					&--disabled {
-						/* #ifndef APP-NVUE */
+						/* #ifdef H5 */
 						cursor: not-allowed;
 						/* #endif */
 					}

@@ -27,7 +27,7 @@
 		},
 		{
 			text: '我的',
-			icon: 'home',
+			icon: 'account',
 			pagePath: 'my'
 		}
 	])

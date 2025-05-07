@@ -11,7 +11,7 @@
 		    :class="iconClasses"
 		    :style="[iconWrapStyle]"
 		>
-			<slot name="icon">
+			<slot name="icon" :elIconSize="elIconSize" :elIconColor="elIconColor">
 				<u-icon
 				    class="u-radio__icon-wrap__icon"
 				    name="checkbox-mark"
@@ -20,15 +20,18 @@
 				/>
 			</slot>
 		</view>
-		<text
-			class="u-radio__text"
-		    @tap.stop="labelClickHandler"
-		    :style="{
-				color: elDisabled ? elInactiveColor : elLabelColor,
-				fontSize: elLabelSize,
-				lineHeight: elLabelSize
-			}"
-		>{{label}}</text>
+		<view class="u-radio__label-wrap cursor-pointer" @tap.stop="labelClickHandler">
+			<slot name="label" :label="label" :elDisabled="elDisabled">
+				<text
+					class="u-radio__text"
+					:style="{
+						color: elDisabled ? elInactiveColor : elLabelColor,
+						fontSize: elLabelSize,
+						lineHeight: elLabelSize
+					}"
+				>{{label}}</text>
+			</slot>
+		</view>
 	</view>
 </template>
 

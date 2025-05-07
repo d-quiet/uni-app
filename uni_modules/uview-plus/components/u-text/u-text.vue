@@ -3,10 +3,7 @@
         class="u-text"
         :class="[customClass]"
         v-if="show"
-        :style="{
-            margin: margin,
-			justifyContent: align === 'left' ? 'flex-start' : align === 'center' ? 'center' : 'flex-end'
-        }"
+        :style="wrapStyle"
         @tap="clickHandler"
     >
         <text
@@ -22,8 +19,9 @@
             ></u-icon>
         </view>
         <u-link
-            v-if="mode === 'link'"			class="u-text__value"
-            :style="{fontWeight: valueStyle.fontWeight, wordWrap: valueStyle.wordWrap, fontSize: valueStyle.fontSize}"			:class="[			    type && `u-text__value--${type}`,			    lines && `u-line-${lines}`			]"			:text="value"
+            v-if="mode === 'link'" class="u-text__value"
+            :style="{fontWeight: valueStyle.fontWeight, wordWrap: valueStyle.wordWrap, fontSize: valueStyle.fontSize}"
+            :class="[type && `u-text__value--${type}`,lines && `u-line-${lines}`]" :text="value"
             :href="href"
             underLine
         ></u-link>
@@ -115,6 +113,20 @@ export default {
     // #endif
 	emits: ['click'],
     computed: {
+        wrapStyle() {
+            let style = {
+                margin: this.margin,
+			    justifyContent: this.align === 'left' ? 'flex-start' : this.align === 'center' ? 'center' : 'flex-end'
+            }
+            // 占满剩余空间
+            if (this.flex1) {
+                style.flex = 1;
+				// #ifndef APP-NVUE
+				style.width = '100%';
+				// #endif
+            }
+			return style;
+        },
         valueStyle() {
             const style = {
                 textDecoration: this.decoration,
@@ -149,14 +161,14 @@ export default {
     },
     methods: {
         addStyle,
-        clickHandler() {
+        clickHandler(e) {
             // 如果为手机号模式，拨打电话
             if (this.call && this.mode === 'phone') {
                 uni.makePhoneCall({
                     phoneNumber: this.text
                 })
             }
-            this.$emit('click')
+            this.$emit('click', e)
         }
     }
 }
@@ -169,10 +181,6 @@ export default {
     @include flex(row);
     align-items: center;
     flex-wrap: nowrap;
-    flex: 1;
-	/* #ifndef APP-NVUE */
-	width: 100%;
-	/* #endif */
 
     &__price {
         font-size: 14px;

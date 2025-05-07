@@ -1,5 +1,13 @@
 <template>
-	<view class="u-popup"  :class="[customClass]">
+	<view class="u-popup" :class="[customClass]"
+		:style="{width: show == false ? '0px' : '',
+			height: show == false ? '0px' : ''}">
+		<view class="u-popup__trigger">
+			<slot name="trigger">
+			</slot>
+			<view @click="open"
+				class="u-popup__trigger__cover"></view>
+		</view>
 		<u-overlay
 			:show="show"
 			@click="overlayClick"
@@ -17,10 +25,12 @@
 			@afterEnter="afterEnter"
 			@click="clickHandler"
 		>
+			<!-- @click.stop不能去除，去除会导致居中模式下点击内容区域触发关闭弹窗 -->
 			<view
 				class="u-popup__content"
 				:style="[contentStyle]"
-				@tap.stop="noop"
+				@click.stop="noop"
+				@touchmove.stop.prevent="noop"
 			>
 				<u-status-bar v-if="safeAreaInsetTop"></u-status-bar>
 				<slot></slot>
@@ -49,7 +59,7 @@
 	import { props } from './props';
 	import { mpMixin } from '../../libs/mixin/mpMixin';
 	import { mixin } from '../../libs/mixin/mixin';
-	import { addUnit, addStyle, deepMerge, sleep, sys } from '../../libs/function/index';
+	import { addUnit, addStyle, deepMerge, sleep, getWindowInfo } from '../../libs/function/index';
 	/**
 	 * popup 弹窗
 	 * @description 弹出层容器，用于展示弹窗、信息提示等内容，支持上、下、左、右和中部弹出。组件只提供容器，内部内容由用户自定义
@@ -72,7 +82,7 @@
 	 * @property {Object}			customStyle			组件的样式，对象形式
 	 * @event {Function} open 弹出层打开
 	 * @event {Function} close 弹出层收起
-	 * @example <u-popup v-model="show"><text>出淤泥而不染，濯清涟而不妖</text></u-popup>
+	 * @example <u-popup v-model:show="show"><text>出淤泥而不染，濯清涟而不妖</text></u-popup>
 	 */
 	export default {
 		name: 'u-popup',
@@ -137,7 +147,7 @@
 				// 不使用css方案，是因为nvue不支持css的iPhoneX安全区查询属性
 				const {
 					safeAreaInsets
-				} = sys()
+				} = getWindowInfo()
 				if (this.mode !== 'center') {
 					style.flex = 1
 				}
@@ -177,15 +187,20 @@
 				}
 			},
 		},
-		emits: ["open", "close", "click"],
+		emits: ["open", "close", "click", "update:show"],
 		methods: {
 			// 点击遮罩
 			overlayClick() {
 				if (this.closeOnClickOverlay) {
+					this.$emit('update:show', false)
 					this.$emit('close')
 				}
 			},
+			open(e) {
+				this.$emit('update:show', true)
+			},
 			close(e) {
+				this.$emit('update:show', false)
 				this.$emit('close')
 			},
 			afterEnter() {
@@ -236,6 +251,17 @@
 
 	.u-popup {
 		flex: $u-popup-flex;
+		
+		&__trigger {
+			position: relative;
+			&__cover {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+			}
+		}
 
 		&__content {
 			background-color: $u-popup-content-background-color;

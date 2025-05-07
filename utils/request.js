@@ -1,6 +1,5 @@
 //域名
 const baseUrl = "https://yxq.clcwgyl.cn";
-import utils from './utils';
 // 从stores拿token
 import {
 	useStore
@@ -8,7 +7,7 @@ import {
 //请求 
 function http(opts) {
 	const store = useStore()
-	console.log(store.user_token,999)
+	console.log(store.user_token, 999)
 	let thisBaseUrl = baseUrl; //单独配置的域名   
 	let httpDefaultOpts = {
 		url: thisBaseUrl + opts.url,
@@ -21,12 +20,12 @@ function http(opts) {
 			"Accept": "application/json",
 			'lng': store.lng,
 			'lat': store.lat,
-			'token':store.user_token,
+			'token': store.user_token,
 			'content-Type': 'application/x-www-form-urlencoded'
 		} : {
 			'lng': store.lng,
 			'lat': store.lat,
-			'token':store.user_token,
+			'token': store.user_token,
 			'X-Requested-With': 'XMLHttpRequest',
 			'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
 		},
@@ -63,10 +62,10 @@ function http(opts) {
 							uni.removeStorageSync('token');
 							uni.removeStorageSync('userInfo');
 							uni.navigateTo({
-								url:'/pages/pageIndex/login/index'
+								url: '/pages/pageIndex/login/index'
 							})
 							uni.showToast({
-								icon:'none',
+								icon: 'none',
 								title: '请登陆后操作',
 							})
 							reject("登录超时")

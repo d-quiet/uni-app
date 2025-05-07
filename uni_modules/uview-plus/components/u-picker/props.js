@@ -2,6 +2,32 @@ import { defineMixin } from '../../libs/vue'
 import defProps from '../../libs/config/props.js'
 export const props = defineMixin({
     props: {
+        modelValue: {
+            type: Array,
+            default: () => []
+        },
+        hasInput: {
+            type: Boolean,
+            default: false
+        },
+        inputProps: {
+            type: Object,
+            default: () => {
+                return {}
+            }
+        },
+        disabled: {
+            type: Boolean,
+            default: () => defProps.picker.disabled
+        },
+		disabledColor:{
+			type: String,
+			default: () => defProps.picker.disabledColor
+		},
+        placeholder: {
+            type: String,
+            default: () => defProps.picker.placeholder
+        },
         // 是否展示picker弹窗
         show: {
             type: Boolean,
@@ -81,6 +107,16 @@ export const props = defineMixin({
 		immediateChange: {
 			type: Boolean,
 			default: () => defProps.picker.immediateChange
-		}
+		},
+        // 工具栏右侧插槽是否开启
+        toolbarRightSlot: {
+			type: Boolean,
+			default: false
+		},
+		// 层级
+		zIndex: {
+		    type: [String, Number],
+		    default: () => defProps.picker.zIndex
+		},
     }
 })

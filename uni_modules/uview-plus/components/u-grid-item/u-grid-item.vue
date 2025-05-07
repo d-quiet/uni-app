@@ -52,9 +52,6 @@
 				// #ifdef APP-NVUE
 				width: 0, // nvue下才这么计算，vue下放到computed中，否则会因为延时造成闪烁
 				// #endif
-				// #ifdef MP-TOUTIAO
-				width: '100%',
-				// #endif
 				classes: [], // 类名集合，用于判断是否显示右边和下边框
 			};
 		},
@@ -69,21 +66,16 @@
 		},
 		// #endif
 		computed: {
-			// #ifndef APP-NVUE || MP-TOUTIAO
-			// vue下放到computed中，否则会因为延时造成闪烁
-			width() {
-				if (this.parentData.col > 0) {
-					return 100 / Number(this.parentData.col) + '%'
-				} else {
-					return 0;
-				}
-			},
-			// #endif
 			itemStyle() {
 				const style = {
-					background: this.bgColor,
-					width: this.width
+					background: this.bgColor
 				}
+				// #ifdef APP-NVUE
+				style['width'] = this.width
+				// #endif
+				// #ifndef APP-NVUE
+				style['width'] = '100%'
+				// #endif
 				return deepMerge(style, addStyle(this.customStyle))
 			}
 		},
@@ -172,12 +164,7 @@
 				}
 			}
 		},
-		// #ifdef VUE2
-		beforeDestroy() {
-		// #endif
-		// #ifdef VUE3
 		beforeUnmount() {
-		// #endif
 			// 移除事件监听，释放性能
 			uni.$off('$uGridItem')
 		}

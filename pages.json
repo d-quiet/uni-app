@@ -11,7 +11,7 @@
 			"path": "pages/index/my",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": ""
+				"navigationBarTitleText": "我的"
 			}
 		}
 	],

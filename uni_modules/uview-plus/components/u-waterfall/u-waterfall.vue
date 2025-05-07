@@ -1,9 +1,9 @@
 <template>
     <view class="u-waterfall">
-        <view id="u-left-column" class="u-column">
+        <view ref="u-left-column" id="u-left-column" class="u-column">
             <slot name="left" :leftList="leftList"></slot>
         </view>
-        <view id="u-right-column" class="u-column">
+        <view ref="u-right-column" id="u-right-column" class="u-column">
             <slot name="right" :rightList="rightList"></slot>
         </view>
     </view>
@@ -18,6 +18,8 @@
      * @property {String Number} add-time 单条数据添加到队列的时间间隔，单位ms，见上方注意事项说明（默认200）
      * @example <u-waterfall :flowList="flowList"></u-waterfall>
      */
+    import { mpMixin } from '../../libs/mixin/mpMixin';
+	import { mixin } from '../../libs/mixin/mixin';
     export default {
         name: "u-waterfall",
         props: {
@@ -54,6 +56,7 @@
                 default: 'id'
             }
         },
+        mixins: [mpMixin, mixin],
         data() {
             return {
                 leftList: [],
@@ -64,11 +67,16 @@
         },
         watch: {
             copyFlowList(nVal, oVal) {
-                // 取差值，即这一次数组变化新增的部分
-                let startIndex = Array.isArray(oVal) && oVal.length > 0 ? oVal.length : 0;
-                // 拼接上原有数据
-                this.tempList = this.tempList.concat(this.cloneData(nVal.slice(startIndex)));
-                this.splitData();
+                if (!nVal || nVal.length == 0) {
+                    this.clear(false);
+                    // console.log('clear');
+                } else {
+                    // 取差值，即这一次数组变化新增的部分
+                    let startIndex = Array.isArray(oVal) && oVal.length > 0 ? oVal.length : 0;
+                    // 拼接上原有数据
+                    this.tempList = this.tempList.concat(this.cloneData(nVal.slice(startIndex)));
+                    this.splitData();
+                }
             }
         },
         mounted() {
@@ -78,11 +86,17 @@
         computed: {
             // 破坏flowList变量的引用，否则watch的结果新旧值是一样的
             copyFlowList() {
+                // #ifdef VUE3
+                if (!this.modelValue || this.modelValue.length == 0) {
+                    this.clear(false);
+                    // console.log('clear');
+                    return [];
+                } else {
+                    return this.cloneData(this.modelValue);
+                }
+                // #endif
                 // #ifdef VUE2
                 return this.cloneData(this.value);
-                // #endif
-                // #ifdef VUE3
-                return this.cloneData(this.modelValue);
                 // #endif
             }
         },
@@ -124,16 +138,18 @@
                 return JSON.parse(JSON.stringify(data));
             },
             // 清空数据列表
-            clear() {
+            clear(bak = true) {
                 this.leftList = [];
                 this.rightList = [];
                 // 同时清除父组件列表中的数据
-                // #ifdef VUE2
-                this.$emit('input', []);
-                // #endif
-                // #ifdef VUE3
-                this.$emit('update:modelValue', []);
-                // #endif
+                if (bak) {
+                    // #ifdef VUE2
+                    this.$emit('input', []);
+                    // #endif
+                    // #ifdef VUE3
+                    this.$emit('update:modelValue', []);
+                    // #endif
+                }
                 this.tempList = [];
             },
             // 清除某一条指定的数据，根据id实现
@@ -156,7 +172,7 @@
                 // #endif
                 // #ifdef VUE3
                 index = this.modelValue.findIndex(val => val[this.idKey] == id);
-                if (index != -1) this.$emit('input', this.modelValue.splice(index, 1));
+                if (index != -1) this.$emit('update:modelValue', this.modelValue.splice(index, 1));
                 // #endif
             },
             // 修改某条数据的某个属性
@@ -216,10 +232,15 @@
         @include flex;
         flex: 1;
         flex-direction: column;
-        height: auto;
+        overflow: hidden;
+        /* #ifndef APP-NVUE */
+        height: 100%;
+        /* #endif */
     }
 
     .u-image {
-        width: 100%;
+        /* #ifndef APP-NVUE */
+        max-width: 100%;
+        /* #endif */
     }
 </style>
